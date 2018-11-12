@@ -1,4 +1,4 @@
-package com.rozhak.kafkaconsumer;
+package com.rozhak.kafka.consumer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
