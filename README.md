@@ -2,7 +2,7 @@
 
 To run this application you need to install zookeeper and kafka.
 
-#### Here is a link where you can read about installing ang configuring kafka and zookeeper on Windows OS you can read here:
+#### Here is a link where you can read about installing ang configuring kafka and zookeeper on Windows OS:
 > https://dzone.com/articles/running-apache-kafka-on-windows-os
 
 ### This application uses 2 topics on kafka server: 
