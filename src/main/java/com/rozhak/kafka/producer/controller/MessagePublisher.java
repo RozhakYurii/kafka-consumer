@@ -10,35 +10,37 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("message")
 public class MessagePublisher {
 
-    @Autowired
-    KafkaTemplate<String, String> regularKafkaTemplate;
+
+    private final KafkaTemplate<String, String> regularKafkaTemplate;
+    private final KafkaTemplate<String, Message> messageKafkaTemplate;
 
     @Autowired
-    KafkaTemplate<String, Message> messageKafkaTemplate;
+    public MessagePublisher(KafkaTemplate<String, String> regularKafkaTemplate, KafkaTemplate<String, Message> messageKafkaTemplate) {
+        this.regularKafkaTemplate = regularKafkaTemplate;
+        this.messageKafkaTemplate = messageKafkaTemplate;
+    }
 
     @Value("${application.kafka.jsonTopicName}")
-    private String MESSAGE_TOPIC_NAME;
+    private String messageTopicName;
 
     @Value("${application.kafka.topicName}")
-    private String STRING_TOPIC_NAME;
+    private String stringTopicName;
 
     @GetMapping("/publish/{message}")
     public String publishRegularMessageToKafka(@PathVariable("message") String message) {
-        regularKafkaTemplate.send(STRING_TOPIC_NAME, message);
+        regularKafkaTemplate.send(stringTopicName, message);
         return "Message was successfully published to Kafka:" + message;
     }
 
     @GetMapping("/publishAsJson/{message}")
     public String publishJsonMessageToKafka(@PathVariable("message") String message) {
-        messageKafkaTemplate.send(MESSAGE_TOPIC_NAME, new Message(message, "defaultTag"));
-//        messageKafkaTemplate.send(STRING_TOPIC_NAME, new Message(message, "defaultTag"));
+        messageKafkaTemplate.send(messageTopicName, new Message(message, "defaultTag"));
         return "JSON Message was successfully published to Kafka:" + message;
     }
 
     @PostMapping(value = "/publishAsJson")
     public String publishJsonMessageToKafka(@RequestBody Message message) {
-        messageKafkaTemplate.send(MESSAGE_TOPIC_NAME, message);
-//        messageKafkaTemplate.send(STRING_TOPIC_NAME, message);
+        messageKafkaTemplate.send(messageTopicName, message);
         return "JSON Message was successfully published to Kafka:" + message;
     }
 }
