@@ -64,7 +64,7 @@ return new StreamsBuilderFactoryBean(config());
         KStream<String, String> kStreamIn = builder.stream("test", Consumed.with(Serdes.String(), Serdes.String()));
         kStreamIn.mapValues((ValueMapper<String, String>) String::toLowerCase)
                 .peek((key, value) -> log.warn("Meassage \"{}\" with key \"{} \"  was processed", value, key))
-                .mapValues(value -> new Message(value + " I was processed in your stream", "defaultTag"))
+                .mapValues(value -> new Message(value + " processed by stream", "defaultTag"))
                 .to("testJson", Produced.with(Serdes.String(), messageSerde));
 
         return kStreamIn;
