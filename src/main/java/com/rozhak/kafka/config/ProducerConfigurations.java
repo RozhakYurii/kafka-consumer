@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
@@ -42,15 +43,23 @@ public class ProducerConfigurations {
         return new DefaultKafkaProducerFactory<>(config);
     }
 
+    @Bean
+    public KafkaTemplate<String, String> regularKafkaTemplate() {
+        return new KafkaTemplate<>(regularProducerFactory());
+    }
+
+    @Bean
+    public KafkaTemplate<String, String> notExactlyAMessageKafkaTemplate() {
+        final KafkaTemplate<String, String> notExactlyAMessageKafkaTemplate = new KafkaTemplate<>(regularProducerFactory());
+        notExactlyAMessageKafkaTemplate.setMessageConverter(new StringJsonMessageConverter());
+        notExactlyAMessageKafkaTemplate.setDefaultTopic("testJsonButNotExactlyMessage");
+        return notExactlyAMessageKafkaTemplate;
+    }
+
     private Map<String, Object> defaultConfigurations() {
         Map<String, Object> config = new HashMap<>();
         config.put(BOOTSTRAP_SERVERS_CONFIG, bootstrapServerUrl + ":" + bootstrapServerPort);
         config.put(KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         return config;
-    }
-
-    @Bean
-    public KafkaTemplate<String, String> regularKafkaTemplate() {
-        return new KafkaTemplate<>(regularProducerFactory());
     }
 }

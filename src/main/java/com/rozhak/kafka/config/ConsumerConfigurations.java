@@ -9,6 +9,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
@@ -64,6 +65,26 @@ public class ConsumerConfigurations {
     public ConcurrentKafkaListenerContainerFactory<String, Message> messageKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Message> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(messageConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> notExactlyMessageConsumerFactory() {
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(BOOTSTRAP_SERVERS_CONFIG, bootstrapServerUrl + ":" + bootstrapServerPort);
+        config.put(GROUP_ID_CONFIG, "groupNotExactlyMessage");
+        config.put(KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        config.put(VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+        return new DefaultKafkaConsumerFactory<>(config);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> notExactlyMessageKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(notExactlyMessageConsumerFactory());
+        factory.setMessageConverter(new StringJsonMessageConverter());
         return factory;
     }
 
