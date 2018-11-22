@@ -16,22 +16,18 @@ import java.util.UUID;
 @Slf4j
 public class MessagePublisher {
 
-    @Value("${application.kafka.jsonTopicName}")
-    private String messageTopicName;
-
     @Value("${application.kafka.topicName}")
     private String stringTopicName;
 
-
-    private static final String SUCCESS_MESSAGE = "JSON Message was successfully published to Kafka: {}";
+    private static final String SUCCESS_MESSAGE = "Message was successfully published to Kafka: {}";
 
     private final KafkaTemplate<String, String> regularKafkaTemplate;
-    private final KafkaTemplate<String, Message> messageKafkaTemplate;
+    private final KafkaTemplate<String, String> messageKafkaTemplate;
     private final KafkaTemplate<String, String> notExactlyAMessageKafkaTemplate;
 
     @Autowired
     public MessagePublisher(KafkaTemplate<String, String> regularKafkaTemplate,
-                            KafkaTemplate<String, Message> messageKafkaTemplate,
+                            KafkaTemplate<String, String> messageKafkaTemplate,
                             KafkaTemplate<String, String> notExactlyAMessageKafkaTemplate) {
         this.regularKafkaTemplate = regularKafkaTemplate;
         this.messageKafkaTemplate = messageKafkaTemplate;
@@ -49,25 +45,25 @@ public class MessagePublisher {
     @GetMapping("/publishAsJson/{message}")
     public String publishJsonMessageToKafka(@PathVariable("message") String message) {
         final Message messageObject = new Message(message, "defaultTag");
-        final String messageKey = UUID.randomUUID().toString();
-        messageKafkaTemplate.send(messageTopicName, messageKey, messageObject);
+        final GenericMessage<Message> genericMessage = new GenericMessage<>(messageObject);
+        messageKafkaTemplate.send(genericMessage);
         log.info(SUCCESS_MESSAGE, message);
         return "generated JSON Message was successfully published to Kafka:" + message;
     }
 
     @PostMapping(value = "/publishAsJson")
     public String publishJsonMessageToKafka(@RequestBody Message message) {
-        final String messageKey = UUID.randomUUID().toString();
-        messageKafkaTemplate.send(messageTopicName, messageKey, message);
+        final GenericMessage<Message> genericMessage = new GenericMessage<>(message);
+        messageKafkaTemplate.send(genericMessage);
         log.info(SUCCESS_MESSAGE, message);
         return "JSON Message was successfully published to Kafka:" + message;
     }
 
     @GetMapping(value = "/publishAsJsonWithNotSpecifiedClass/{message}")
     public String publishAsJsonWithNotSpecifiedClassToKafka(@PathVariable("message") String message) {
-//        final String messageKey = UUID.randomUUID().toString();
         final NotExactlyAMessage messageObject = new NotExactlyAMessage(message, "defaultTagFrom");
-        notExactlyAMessageKafkaTemplate.send(new GenericMessage<>(messageObject));
+        final GenericMessage<NotExactlyAMessage> genericMessage = new GenericMessage<>(messageObject);
+        notExactlyAMessageKafkaTemplate.send(genericMessage);
         log.info(SUCCESS_MESSAGE, message);
         return "JSON GenericMessage was successfully published to Kafka:" + message;
     }

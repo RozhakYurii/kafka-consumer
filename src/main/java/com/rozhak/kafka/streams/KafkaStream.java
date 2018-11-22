@@ -2,27 +2,26 @@ package com.rozhak.kafka.streams;
 
 import com.rozhak.kafka.model.Message;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.ValueMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
+import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Configuration
 @EnableKafkaStreams
@@ -33,6 +32,13 @@ public class KafkaStream {
     private String bootstrapServerUrl;
     @Value("${application.kafka.bootstrapserver.port}")
     private String bootstrapServerPort;
+    @Value("${application.kafka.streamTopicName}")
+    private String outputTopicName;
+    @Value("${application.kafka.topicName}")
+    private String inputTopicName;
+
+    @Autowired
+    StringJsonMessageConverter advancedMessageConverter;
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration config() {
@@ -50,7 +56,7 @@ public class KafkaStream {
     }
 
 
-//If not using @EnableKafkaStreams annotation we need to create streams consumer factory bean manually
+    //If not using @EnableKafkaStreams annotation we need to create streams consumer factory bean manually
 /*@Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_BUILDER_BEAN_NAME)
 public StreamsBuilderFactoryBean factoryBean() {
 return new StreamsBuilderFactoryBean(config());
@@ -59,27 +65,15 @@ return new StreamsBuilderFactoryBean(config());
 
     @Bean
     public KStream<String, String> kStream(StreamsBuilder builder) {
-        final Serde<Message> messageSerde = getMessageSerde();
 
-        KStream<String, String> kStreamIn = builder.stream("test", Consumed.with(Serdes.String(), Serdes.String()));
+        KStream<String, String> kStreamIn = builder.stream(inputTopicName, Consumed.with(Serdes.String(), Serdes.String()));
         kStreamIn.mapValues((ValueMapper<String, String>) String::toLowerCase)
-                .peek((key, value) -> log.warn("Meassage \"{}\" with key \"{} \"  was processed", value, key))
+                .selectKey((key, value) -> UUID.randomUUID().toString())
+                .peek((key, value) -> log.info("B4 MAPPING VALUE \"{}\" with key \"{} \"  was processed", value, key))
                 .mapValues(value -> new Message(value + " processed by stream", "defaultTag"))
-                .to("testJson", Produced.with(Serdes.String(), messageSerde));
+                .peek((key, value) -> log.info("AFTER MAPPING VALUE \"{}\" with key \"{} \"  was processed", value, key))
+                .to(outputTopicName, Produced.with(Serdes.String(), new JsonSerde<>()));
 
         return kStreamIn;
-    }
-
-    private Serde<Message> getMessageSerde() {
-        Map<String, Object> serdeProps = new HashMap<>();
-        serdeProps.put("JsonPOJOClass", Message.class);
-
-        final Serializer<Message> messageJsonSerializer = new JsonSerializer<>();
-        messageJsonSerializer.configure(serdeProps, false);
-
-        final Deserializer<Message> messageJsonDeserializer = new JsonDeserializer<>();
-        messageJsonDeserializer.configure(serdeProps, false);
-
-        return Serdes.serdeFrom(messageJsonSerializer, messageJsonDeserializer);
     }
 }
